@@ -11,7 +11,7 @@ from ctypes import CFUNCTYPE, c_int, c_float
 
 if __name__ == "__main__":
     DEBUG_LEXER = False
-    DEBUG_PARSER = False
+    DEBUG_PARSER = True
     DEBUG_COMPILER = True
 
     with open("Testing/Test.txt", "r") as f:
@@ -45,4 +45,3 @@ if __name__ == "__main__":
     if DEBUG_COMPILER:
         with open("Testing/assembly.txt", "w") as f:
             f.write(str(module))
-        

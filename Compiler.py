@@ -10,10 +10,14 @@ class Compiler:
     def __init__(self) -> None:
         self.type_map = {
             "int": ir.IntType(32),
-            "float": ir.FloatType,
+            "float": ir.FloatType(),
         }
         self.module: ir.Module = ir.Module("Main")
         self.builder: ir.IRBuilder = ir.IRBuilder()
+        self.standard_functions = {
+            "float_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["float"], [self.type_map["float"], self.type_map["float"]]), name="llvm.pow.f32"),
+            "int_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["int"], [self.type_map["int"], self.type_map["int"]]), name="llvm.pow.i32"),
+        }
 
     def compile(self, node: Node):
         match node.type():
@@ -72,6 +76,27 @@ class Compiler:
                     node_value = self.builder.mul(left_value, right_value)
                 case "/":
                     node_value = self.builder.sdiv(left_value, right_value)
+                case "%":
+                    node_value = self.builder.srem(left_value, right_value)
+                case "^":
+                    exponentiation = self.standard_functions["int_exponentiation"]
+                    node_value = self.builder.call(exponentiation, [left_value, right_value])
+        elif isinstance(left_type, ir.FloatType) and isinstance(right_type, ir.FloatType):
+            node_type = self.type_map["float"]
+            match operator:
+                case "+":
+                    node_value = self.builder.fadd(left_value, right_value)
+                case "-":
+                    node_value = self.builder.fsub(left_value, right_value)
+                case "*":
+                    node_value = self.builder.fmul(left_value, right_value)
+                case "/":
+                    node_value = self.builder.fdiv(left_value, right_value)
+                case "%":
+                    node_value = self.builder.frem(left_value, right_value)
+                case "^":
+                    exponentiation = self.standard_functions["float_exponentiation"]
+                    node_value = self.builder.call(exponentiation, [left_value, right_value])
         return node_value, node_type
 
 
