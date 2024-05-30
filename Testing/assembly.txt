@@ -1,0 +1,11 @@
+; ModuleID = "Main"
+target triple = "x86_64-pc-windows-msvc"
+target datalayout = ""
+
+define i32 @"Main"()
+{
+"Main function":
+  %".2" = add i32 5, 5
+  %".3" = mul i32 2, %".2"
+  ret i32 0
+}
