@@ -1,4 +1,4 @@
-from Token import TokenType, Token
+from Token import TokenType, Token, get_identifier
 
 
 class Lexer:
@@ -15,10 +15,6 @@ class Lexer:
         else:
             self.current_character = self.code[self.position]
             self.position += 1
-    
-    def _go_previous_character(self) -> None:
-        self.position -= 1
-        self.current_character = self.code[self.position]
     
     def _skip_white_space(self) -> None:
         while self.current_character in [" ", "\t", "\r"]:
@@ -40,8 +36,6 @@ class Lexer:
             self._next_character()
             if self.current_character is None:
                 break
-        # get back to the last digit
-        if self.current_character is not None: self._go_previous_character()
         if comma_counter == 0:
             return self._create_token(TokenType.INT, int(number))
         elif comma_counter == 1:
@@ -49,19 +43,14 @@ class Lexer:
         else:
             return self._create_token(TokenType.EXCEPTION, number)
     
-    # def _is_letter(self) -> bool:
-    #     return ("a" <= self.current_character and self.current_character <= "z") or ("A" <= self.current_character and self.current_character <= "Z") or self.current_character in ["å", "ä", "ö", "_"]
+    def _is_letter(self) -> bool:
+        return ("a" <= self.current_character and self.current_character <= "z") or ("A" <= self.current_character and self.current_character <= "Z") or self.current_character in ["å", "ä", "ö", "Å", "Ä", "Ö", "_"]
     
-    # should not return tokenType.string
-    # def _read_letter(self) -> bool:
-    #     text = ""
-    #     while self._is_letter():
-    #         number += self.current_character
-    #         self._next_character()
-    #         if self.current_character is None:
-    #             break
-    #     if self.current_character is not None: self._go_previous_character()
-    #     return self._create_token(TokenType.STRING, text)
+    def _read_identifier(self) -> str:
+        start = self.position - 1
+        while self.current_character is not None and (self.current_character.isalnum() or self._is_letter()):
+            self._next_character()
+        return self.code[start:self.position - 1]
     
     def get_next_token(self) -> Token:
         self._skip_white_space()
@@ -80,6 +69,10 @@ class Lexer:
                 token = self._create_token(TokenType.EXPONENT, self.current_character)
             case "%":
                 token = self._create_token(TokenType.MODULO, self.current_character)
+            case "=":
+                token = self._create_token(TokenType.EQUALS, self.current_character)
+            case ":":
+                token = self._create_token(TokenType.COLON, self.current_character)
             case "(":
                 token = self._create_token(TokenType.LPAREN, self.current_character)
             case ")":
@@ -92,8 +85,12 @@ class Lexer:
             case _:
                 if self._is_number():
                     token = self._read_number()
-                # elif self._is_letter(): 
-                #     token = self._read_letter()
+                    return token # do not increment
+                elif self._is_letter():
+                    literal = self._read_identifier()
+                    token_type = get_identifier(literal)
+                    token = self._create_token(token_type, literal)
+                    return token # do not increment
                 else:
                     token = self._create_token(TokenType.EXCEPTION, self.current_character)
         self._next_character()

@@ -9,6 +9,7 @@ class TokenType(Enum):
     INT = "INT"
     FLOAT = "FLOAT"
     STRING = "STRING"
+    IDENTIFIER = "IDENTIFIER"
 
     PLUS = "PLUS"
     MINUS = "MINUS"
@@ -20,6 +21,13 @@ class TokenType(Enum):
     EOL = "EOL"  # end of line
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
+    COLON = "COLON"
+
+    EQUALS = "EQUALS"
+
+    VAR = "VAR"
+
+    TYPE = "TYPE"
 
 
 class Token:
@@ -34,4 +42,15 @@ class Token:
     
     def __repr__(self) -> str:
         return str(self)
-    
+
+KEYWORDS = {
+    "var": TokenType.VAR,
+}
+
+TYPES = ["int", "float", "string"]
+
+def get_identifier(identifier: str) -> TokenType:
+    keyword = KEYWORDS.get(identifier)
+    if keyword: return keyword
+    if identifier in TYPES: return TokenType.TYPE
+    return TokenType.IDENTIFIER

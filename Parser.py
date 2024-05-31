@@ -3,9 +3,9 @@ from Token import Token, TokenType
 from enum import Enum, auto
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement
+from AST import ExpressionStatement, VarStatement
 from AST import InfixExpression
-from AST import IntegerLiteral, FloatLiteral
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 
 
 class PrecedenceTypes(Enum):
@@ -55,6 +55,9 @@ class Parser:
     def _get_next_token(self) -> None:
         self.current_token = self.peek_token
         self.peek_token = self.lexer.get_next_token()
+    
+    def _current_token_is(self, token_type: TokenType) -> bool:
+        return self.current_token.type == token_type
 
     def _peek_token_is(self, token_type: TokenType) -> bool:
         return self.peek_token.type == token_type
@@ -89,7 +92,11 @@ class Parser:
         return program
     
     def _parse_statement(self) -> Statement:
-        return self._parse_expression_statement()
+        match self.current_token.type:
+            case TokenType.VAR:
+                return self._parse_var_statement()
+            case _:
+                return self._parse_expression_statement()
 
     def _parse_expression_statement(self) -> ExpressionStatement:
         expression = self._parse_expression(PrecedenceTypes.P_LOWEST)
@@ -98,6 +105,28 @@ class Parser:
         
         statement: ExpressionStatement = ExpressionStatement(expression)
         return statement
+
+    def _parse_var_statement(self) -> VarStatement:
+        # variable
+        if not self._expect_peek(TokenType.IDENTIFIER): return None
+        name = IdentifierLiteral(value=self.current_token.literal)
+
+        if not self._expect_peek(TokenType.COLON): return None
+
+        # type
+        if not self._expect_peek(TokenType.TYPE): return None
+        type = self.current_token.literal
+
+        if not self._expect_peek(TokenType.EQUALS): return None
+        self._get_next_token()
+
+        # value
+        value = self._parse_expression(PrecedenceTypes.P_LOWEST)
+
+        while not self._current_token_is(TokenType.EOL) and not self._current_token_is(TokenType.EOF):
+            self._get_next_token()
+
+        return VarStatement(name=name, value=value, value_type=type)
     
     def _parse_expression(self, precedence: PrecedenceTypes) -> Expression | None:
         prefix_function = self.prefix_parse_functions.get(self.current_token.type)

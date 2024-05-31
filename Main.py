@@ -11,13 +11,22 @@ from ctypes import CFUNCTYPE, c_int, c_float
 
 if __name__ == "__main__":
     DEBUG_LEXER = False
-    DEBUG_PARSER = True
+    DEBUG_PARSER = False
     DEBUG_COMPILER = True
 
     with open("Testing/Test.txt", "r") as f:
         code = f.read()
 
     lexer = Lexer(code=code)
+
+    if DEBUG_LEXER:
+        token = lexer.get_next_token()
+        while True:
+            print(token)
+            if token.type == TokenType.EOF:
+                break
+            token = lexer.get_next_token()
+    
     parser = Parser(lexer=lexer)
     program = parser.parse()
     if parser.errors:
@@ -29,14 +38,6 @@ if __name__ == "__main__":
 
     module = compiler.module
     module.triple = llvm.get_default_triple()
-
-    if DEBUG_LEXER:
-        token = lexer.get_next_token()
-        while True:
-            print(token)
-            if token.type == TokenType.EOF:
-                break
-            token = lexer.get_next_token()
 
     if DEBUG_PARSER:
         with open("Testing/AST.json", "w") as f:

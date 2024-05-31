@@ -1,9 +1,10 @@
 from llvmlite import ir
 
 from AST import Node, NodeType, Statement, Expression, Program
-from AST import ExpressionStatement
+from AST import ExpressionStatement, VarStatement
 from AST import InfixExpression
-from AST import IntegerLiteral, FloatLiteral
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
+from Environment import Environment
 
 
 class Compiler:
@@ -14,6 +15,7 @@ class Compiler:
         }
         self.module: ir.Module = ir.Module("Main")
         self.builder: ir.IRBuilder = ir.IRBuilder()
+        self.environment = Environment(records={})
         self.standard_functions = {
             "float_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["float"], [self.type_map["float"], self.type_map["float"]]), name="llvm.pow.f32"),
             "int_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["int"], [self.type_map["int"], self.type_map["int"]]), name="llvm.pow.i32"),
@@ -26,6 +28,8 @@ class Compiler:
             
             case NodeType.ExpressionStatement:
                 self._visit_expression_statement(node)
+            case NodeType.VarStatement:
+                self._visit_var_statement(node)
 
             case NodeType.InfixExpression:
                 self._visit_infix_expression(node)
@@ -38,6 +42,10 @@ class Compiler:
             case NodeType.FloatLiteral:
                 node_value, node_type = node.value, self.type_map["float" if value_type is None else value_type]
                 return ir.Constant(node_type, node_value), node_type
+            case NodeType.IdentifierLiteral:
+                pointer, node_type = self.environment.lookup(node.value)
+                # TODO: error handling if trying to load a non existent variable, function etc.???
+                return self.builder.load(pointer), node_type
             
             case NodeType.InfixExpression:
                 return self._visit_infix_expression(node)
@@ -57,6 +65,21 @@ class Compiler:
     
     def _visit_expression_statement(self, node: ExpressionStatement):
         self.compile(node.expression)
+    
+    def _visit_var_statement(self, node: VarStatement):
+        name = node.name.value
+        value, type = self._resolve_value(node=node.value, value_type=node.value_type)
+
+        # if variable does not exist in current scope
+        if self.environment.lookup(name) is None:
+            pointer = self.builder.alloca(type)
+            self.builder.store(value, pointer)
+            self.environment.define(name, value, type)
+        # if variable exists in current scope
+        else:
+            # TODO: raise an error trying to re-declare a variable???
+            pointer, _ = self.environment.lookup(name)
+            self.builder.store(value, pointer)
     
     def _visit_infix_expression(self, node: InfixExpression) -> tuple[ir.Value, ir.Type]:
         operator = node.operator
@@ -98,5 +121,3 @@ class Compiler:
                     exponentiation = self.standard_functions["float_exponentiation"]
                     node_value = self.builder.call(exponentiation, [left_value, right_value])
         return node_value, node_type
-
-

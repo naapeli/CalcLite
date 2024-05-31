@@ -6,11 +6,13 @@ class NodeType(Enum):
     Program = "Program"
 
     ExpressionStatement = "ExpressionStatement"
+    VarStatement = "VarStatement"
 
     InfixExpression = "InfixExpression"
 
     IntegerLiteral = "IntegerLiteral"
     FloatLiteral = "FloatLiteral"
+    IdentifierLiteral = "IdentifierLiteral"
 
 
 class Node:
@@ -40,6 +42,7 @@ class Program(Node):
             "type": self.type().value,
             "statements": [{statement.type().value: statement.json()} for statement in self.statements]
         }
+    
 
 class ExpressionStatement(Statement):
     def __init__(self, expression: Expression) -> None:
@@ -53,6 +56,24 @@ class ExpressionStatement(Statement):
             "type": self.type().value,
             "expression": self.expression.json()
         }
+
+class VarStatement(Statement):
+    def __init__(self, name, value: Expression, value_type: str) -> None:
+        self.name = name # IdentifierLiteral
+        self.value = value
+        self.value_type = value_type
+    
+    def type(self) -> NodeType:
+        return NodeType.VarStatement
+    
+    def json(self) -> dict:
+        return {
+            "type": self.type().value,
+            "name": self.name.json(),
+            "value": self.value.json(),
+            "value_type": self.value_type
+        }
+
 
 class InfixExpression(Expression):
     def __init__(self, left_node: Expression, operator: str, right_node: Expression) -> None:
@@ -70,6 +91,7 @@ class InfixExpression(Expression):
             "operator": self.operator,
             "right_node": self.right_node.json()
         }
+    
     
 class IntegerLiteral(Expression):
     def __init__(self, value: int) -> None:
@@ -96,3 +118,16 @@ class FloatLiteral(Expression):
             "type": self.type().value,
             "value": self.value
         }
+
+class IdentifierLiteral(Expression):
+    def __init__(self, value: str) -> None:
+        self.value = value
+
+    def type(self) -> NodeType:
+        return NodeType.IdentifierLiteral
+    
+    def json(self) -> dict:
+        return {
+            "type": self.type().value,
+            "value": self.value
+        } 
