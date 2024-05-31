@@ -1,7 +1,7 @@
 from llvmlite import ir
 
 from AST import Node, NodeType, Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement
+from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 from Environment import Environment
@@ -30,6 +30,12 @@ class Compiler:
                 self._visit_expression_statement(node)
             case NodeType.VarStatement:
                 self._visit_var_statement(node)
+            case NodeType.FunctionStatement:
+                self._visit_function_statement(node)
+            case NodeType.BlockStatement:
+                self._visit_block_statement(node)
+            case NodeType.ReturnStatement:
+                self._visit_return_statement(node)
 
             case NodeType.InfixExpression:
                 self._visit_infix_expression(node)
@@ -74,12 +80,46 @@ class Compiler:
         if self.environment.lookup(name) is None:
             pointer = self.builder.alloca(type)
             self.builder.store(value, pointer)
-            self.environment.define(name, value, type)
+            self.environment.define(name, pointer, type)
         # if variable exists in current scope
         else:
             # TODO: raise an error trying to re-declare a variable???
             pointer, _ = self.environment.lookup(name)
             self.builder.store(value, pointer)
+
+    def _visit_function_statement(self, node: FunctionStatement):
+        name = node.name.value
+        body = node.body
+
+        parameter_names = [parameter.value for parameter in node.parameters]
+        parameter_types: list[ir.Type] = []
+        return_type: ir.Type = self.type_map[node.return_type]
+
+        function_type = ir.FunctionType(return_type, parameter_types)
+        function = ir.Function(self.module, function_type, name=name)
+        block = function.append_basic_block(f"{name}_entry")
+
+        previous_builder = self.builder
+        self.builder = ir.IRBuilder(block)
+        previous_environment = self.environment
+        self.environment = Environment({}, previous_environment)
+        self.environment.define(name, function, return_type)
+
+        self.compile(body)
+
+        self.environment = previous_environment
+        self.environment.define(name, function, return_type)
+        self.builder = previous_builder
+
+    def _visit_block_statement(self, node: BlockStatement):
+        for statement in node.statements:
+            self.compile(statement)
+
+    def _visit_return_statement(self, node: ReturnStatement):
+        value, type = self._resolve_value(node.return_value)
+
+        self.builder.ret(value)
+
     
     def _visit_infix_expression(self, node: InfixExpression) -> tuple[ir.Value, ir.Type]:
         operator = node.operator

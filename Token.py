@@ -19,13 +19,17 @@ class TokenType(Enum):
     MODULO = "MODULO"
 
     EOL = "EOL"  # end of line
+    COLON = "COLON"
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
-    COLON = "COLON"
+    LBRACE = "LBRACE"
+    RBRACE = "RBRACE"
 
     EQUALS = "EQUALS"
 
     VAR = "VAR"
+    FUNC = "FUNC"
+    RETURN = "RETURN"
 
     TYPE = "TYPE"
 
@@ -45,6 +49,8 @@ class Token:
 
 KEYWORDS = {
     "var": TokenType.VAR,
+    "func": TokenType.FUNC,
+    "return": TokenType.RETURN,
 }
 
 TYPES = ["int", "float", "string"]

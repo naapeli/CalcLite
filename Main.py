@@ -7,12 +7,14 @@ import json
 from llvmlite import ir
 import llvmlite.binding as llvm
 from ctypes import CFUNCTYPE, c_int, c_float
+from time import perf_counter
 
 
 if __name__ == "__main__":
     DEBUG_LEXER = False
     DEBUG_PARSER = False
-    DEBUG_COMPILER = True
+    DEBUG_COMPILER = False
+    RUN_CODE = True
 
     with open("Testing/Test.txt", "r") as f:
         code = f.read()
@@ -46,3 +48,31 @@ if __name__ == "__main__":
     if DEBUG_COMPILER:
         with open("Testing/assembly.txt", "w") as f:
             f.write(str(module))
+    
+    if RUN_CODE:
+        llvm.initialize()
+        llvm.initialize_native_target()
+        llvm.initialize_native_asmprinter()
+
+        try:
+            parsed_assembly = llvm.parse_assembly(str(module))
+            parsed_assembly.verify()
+        except Exception as e:
+            print(e)
+            raise
+
+        target_machine = llvm.Target.from_default_triple().create_target_machine()
+
+        engine = llvm.create_mcjit_compiler(parsed_assembly, target_machine)
+        engine.finalize_object()
+
+        entry = engine.get_function_address("Main")
+        cfunc = CFUNCTYPE(c_int)(entry)
+
+        start = perf_counter()
+
+        result = cfunc()
+
+        end = perf_counter()
+
+        print(f"Program returned: {result}, Runtime: {end - start} ms.")

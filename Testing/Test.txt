@@ -1,2 +1,10 @@
-var a: float = 123.4
-var b: int = 7583120
+func f(): int {
+
+    {
+        var b: float = 3.14159
+    }
+
+    var a: int = 4
+
+    return a
+}

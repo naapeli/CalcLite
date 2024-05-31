@@ -3,7 +3,7 @@ from Token import Token, TokenType
 from enum import Enum, auto
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 
@@ -40,6 +40,7 @@ class Parser:
             TokenType.INT: self._parse_int_literal,
             TokenType.FLOAT: self._parse_float_literal,
             TokenType.LPAREN: self._parse_grouped_expression,
+            TokenType.IDENTIFIER: self._parse_identifier,
         }
         self.infix_parse_functions = {
             TokenType.PLUS: self._parse_infix_expression,
@@ -83,18 +84,30 @@ class Parser:
         return precidence
     
     def parse(self) -> None:
-        program: Program = Program()
+        statements = []
         while self.current_token.type != TokenType.EOF:
+            if self._current_token_is(TokenType.EOL):
+                # if we find an end of line token
+                self._get_next_token()
+                continue
+                
             statement: Statement = self._parse_statement()
             if statement is not None:
-                program.statements.append(statement)
+                statements.append(statement)
             self._get_next_token()
-        return program
+        
+        return Program(statements)
     
     def _parse_statement(self) -> Statement:
         match self.current_token.type:
             case TokenType.VAR:
                 return self._parse_var_statement()
+            case TokenType.FUNC:
+                return self._parse_function_statement()
+            case TokenType.RETURN:
+                return self._parse_return_statement()
+            case TokenType.LBRACE:
+                return self._parse_block_statement()
             case _:
                 return self._parse_expression_statement()
 
@@ -127,6 +140,48 @@ class Parser:
             self._get_next_token()
 
         return VarStatement(name=name, value=value, value_type=type)
+    
+    def _parse_function_statement(self) -> FunctionStatement:
+        if not self._expect_peek(TokenType.IDENTIFIER): return None
+        function_name = IdentifierLiteral(self.current_token.literal)
+        if not self._expect_peek(TokenType.LPAREN): return None
+        parameters = [] # TODO: parse parameter list and remove checking RPAREN
+        if not self._expect_peek(TokenType.RPAREN): return None
+        if not self._expect_peek(TokenType.COLON): return None
+        if not self._expect_peek(TokenType.TYPE): return None
+        return_type = self.current_token.literal
+        if not self._expect_peek(TokenType.LBRACE): return None
+        body = self._parse_block_statement()
+
+        return FunctionStatement(parameters, body, function_name, return_type)
+
+    def _parse_return_statement(self) -> ReturnStatement:
+        # skip over TokenType.RETURN
+        self._get_next_token()
+
+        return_value = self._parse_expression(PrecedenceTypes.P_LOWEST)
+        if not self._expect_peek(TokenType.EOL):
+            return None
+        return ReturnStatement(return_value)
+
+    def _parse_block_statement(self) -> BlockStatement:
+        statements = []
+        
+        # skip over TokenType.LBRACE and possible end of line
+        self._get_next_token()
+
+        while not self._current_token_is(TokenType.RBRACE) and not self._current_token_is(TokenType.EOF):
+            # skip possible end of line and try again
+            if self._current_token_is(TokenType.EOL):
+                self._get_next_token()
+                continue
+            statement = self._parse_statement()
+            if statement is not None:
+                statements.append(statement)
+            self._get_next_token()
+
+        return BlockStatement(statements)
+
     
     def _parse_expression(self, precedence: PrecedenceTypes) -> Expression | None:
         prefix_function = self.prefix_parse_functions.get(self.current_token.type)
@@ -162,7 +217,7 @@ class Parser:
             return None
         return grouped_expression
 
-    def _parse_int_literal(self) -> Expression:
+    def _parse_int_literal(self) -> IntegerLiteral:
         try:
             value = int(self.current_token.literal)
         except:
@@ -170,10 +225,13 @@ class Parser:
             return None
         return IntegerLiteral(value=value)
  
-    def _parse_float_literal(self) -> Expression:
+    def _parse_float_literal(self) -> FloatLiteral:
         try:
             value = float(self.current_token.literal)
         except:
             self.errors.append(f"Could not parse {self.current_token.literal} as a float.")
             return None
         return FloatLiteral(value=value)
+    
+    def _parse_identifier(self) -> IdentifierLiteral:
+        return IdentifierLiteral(value=self.current_token.literal)

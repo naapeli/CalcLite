@@ -2,31 +2,63 @@
   "type": "Program",
   "statements": [
     {
-      "VarStatement": {
-        "type": "VarStatement",
+      "FunctionStatement": {
+        "type": "FunctionStatement",
         "name": {
           "type": "IdentifierLiteral",
-          "value": "a"
+          "value": "f"
         },
-        "value": {
-          "type": "FloatLiteral",
-          "value": 123.4
-        },
-        "value_type": "float"
-      }
-    },
-    {
-      "VarStatement": {
-        "type": "VarStatement",
-        "name": {
-          "type": "IdentifierLiteral",
-          "value": "b"
-        },
-        "value": {
-          "type": "IntegerLiteral",
-          "value": 7583120
-        },
-        "value_type": "int"
+        "return_type": "int",
+        "parameters": [],
+        "body": {
+          "type": "BlockStatement",
+          "statements": [
+            {
+              "BlockStatement": {
+                "type": "BlockStatement",
+                "statements": [
+                  {
+                    "VarStatement": {
+                      "type": "VarStatement",
+                      "name": {
+                        "type": "IdentifierLiteral",
+                        "value": "b"
+                      },
+                      "value": {
+                        "type": "FloatLiteral",
+                        "value": 3.14159
+                      },
+                      "value_type": "float"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "VarStatement": {
+                "type": "VarStatement",
+                "name": {
+                  "type": "IdentifierLiteral",
+                  "value": "a"
+                },
+                "value": {
+                  "type": "IntegerLiteral",
+                  "value": 4
+                },
+                "value_type": "int"
+              }
+            },
+            {
+              "ReturnStatement": {
+                "type": "ReturnStatement",
+                "return_value": {
+                  "type": "IdentifierLiteral",
+                  "value": "a"
+                }
+              }
+            }
+          ]
+        }
       }
     }
   ]

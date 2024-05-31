@@ -15,6 +15,10 @@ class Lexer:
         else:
             self.current_character = self.code[self.position]
             self.position += 1
+
+    def _peek_character(self) -> str:
+        if self.position + 1 >= len(self.code): return None
+        return self.code[self.position + 1]
     
     def _skip_white_space(self) -> None:
         while self.current_character in [" ", "\t", "\r"]:
@@ -77,6 +81,10 @@ class Lexer:
                 token = self._create_token(TokenType.LPAREN, self.current_character)
             case ")":
                 token = self._create_token(TokenType.RPAREN, self.current_character)
+            case "{":
+                token = self._create_token(TokenType.LBRACE, self.current_character)
+            case "}":
+                token = self._create_token(TokenType.RBRACE, self.current_character)
             case "\n":
                 token = self._create_token(TokenType.EOL, self.current_character)
                 self.line_number += 1
