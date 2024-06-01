@@ -1,9 +1,9 @@
 from llvmlite import ir
 
 from AST import Node, NodeType, Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement, AssignStatement
+from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
 from AST import InfixExpression
-from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 from Environment import Environment
 
 
@@ -12,15 +12,33 @@ class Compiler:
         self.type_map = {
             "int": ir.IntType(32),
             "float": ir.FloatType(),
+            "bool": ir.IntType(1),
         }
         self.module: ir.Module = ir.Module("Main")
         self.builder: ir.IRBuilder = ir.IRBuilder()
         self.environment = Environment(records={})
         self.errors: list[str] = []
-        self.standard_functions = {
-            "float_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["float"], [self.type_map["float"], self.type_map["float"]]), name="llvm.pow.f32"),
-            "int_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["int"], [self.type_map["int"], self.type_map["int"]]), name="llvm.pow.i32"),
-        }
+        self._initialise_builtins()
+    
+    def _initialise_builtins(self):
+        # initialise true and false constants
+        boolean_type = self.type_map["bool"]
+
+        true_var = ir.GlobalVariable(self.module, boolean_type, "true")
+        true_var.initializer = ir.Constant(boolean_type, 1)
+        true_var.global_constant = True
+        self.environment.define("true", true_var, true_var.type)
+
+        false_var = ir.GlobalVariable(self.module, boolean_type, "false")
+        false_var.initializer = ir.Constant(boolean_type, 0)
+        false_var.global_constant = True
+        self.environment.define("false", false_var, false_var.type)
+
+        # initialise exponentiation functions
+        int_exponentiation = ir.Function(self.module, ir.FunctionType(self.type_map["int"], [self.type_map["int"], self.type_map["int"]]), name="llvm.pow.i32")
+        self.environment.define("int_exponentiation", int_exponentiation, self.type_map["int"])
+        float_exponentiation = ir.Function(self.module, ir.FunctionType(self.type_map["float"], [self.type_map["float"], self.type_map["float"]]), name="llvm.pow.f32")
+        self.environment.define("float_exponentiation", float_exponentiation, self.type_map["float"])
 
     def compile(self, node: Node):
         match node.type():
@@ -39,6 +57,8 @@ class Compiler:
                 self._visit_return_statement(node)
             case NodeType.AssignStatement:
                 self._visit_assign_statement(node)
+            case NodeType.IfStatement:
+                self._visit_if_statement(node)
 
             case NodeType.InfixExpression:
                 self._visit_infix_expression(node)
@@ -55,6 +75,9 @@ class Compiler:
                 pointer, node_type = self.environment.lookup(node.value)
                 # TODO: error handling if trying to load a non existent variable, function etc.???
                 return self.builder.load(pointer), node_type
+            case NodeType.BooleanLiteral:
+                value = ir.Constant(self.type_map["bool" if value_type is None else value_type], 1 if node.value else 0)
+                return value, self.type_map["bool" if value_type is None else value_type]
             
             case NodeType.InfixExpression:
                 return self._visit_infix_expression(node)
@@ -133,6 +156,19 @@ class Compiler:
                 self.errors.append(f"Identifier {variable_name} of type {type2} tried to be re-assigned to {type}.")
             else:
                 self.builder.store(value, pointer)
+    
+    def _visit_if_statement(self, node: IfStatement):
+        test, type = self._resolve_value(node.condition)
+
+        if node.alternative:
+            with self.builder.if_else(test) as (true, otherwise):
+                with true:
+                    self.compile(node.consequence)
+                with otherwise:
+                    self.compile(node.alternative)
+        else:
+            with self.builder.if_then(test):
+                self.compile(node.consequence)
 
     
     def _visit_infix_expression(self, node: InfixExpression) -> tuple[ir.Value, ir.Type]:
@@ -143,35 +179,79 @@ class Compiler:
         node_type = None
         node_value = None
         if isinstance(left_type, ir.IntType) and isinstance(right_type, ir.IntType):
-            node_type = self.type_map["int"]
             match operator:
                 case "+":
                     node_value = self.builder.add(left_value, right_value)
+                    node_type = self.type_map["int"]
                 case "-":
                     node_value = self.builder.sub(left_value, right_value)
+                    node_type = self.type_map["int"]
                 case "*":
                     node_value = self.builder.mul(left_value, right_value)
+                    node_type = self.type_map["int"]
                 case "/":
                     node_value = self.builder.sdiv(left_value, right_value)
+                    node_type = self.type_map["int"]
                 case "%":
                     node_value = self.builder.srem(left_value, right_value)
+                    node_type = self.type_map["int"]
                 case "^":
-                    exponentiation = self.standard_functions["int_exponentiation"]
-                    node_value = self.builder.call(exponentiation, [left_value, right_value])
+                    function, node_type = self.environment.lookup("int_exponentiation")
+                    node_value = self.builder.call(function, [left_value, right_value])
+                case "<":
+                    node_value = self.builder.icmp_signed("<", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case "<=":
+                    node_value = self.builder.icmp_signed("<=", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case ">":
+                    node_value = self.builder.icmp_signed(">", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case ">=":
+                    node_value = self.builder.icmp_signed(">=", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case "==":
+                    node_value = self.builder.icmp_signed("==", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case "!=":
+                    node_value = self.builder.icmp_signed("!=", left_value, right_value)
+                    node_type = self.type_map["bool"]
         elif isinstance(left_type, ir.FloatType) and isinstance(right_type, ir.FloatType):
-            node_type = self.type_map["float"]
             match operator:
                 case "+":
                     node_value = self.builder.fadd(left_value, right_value)
+                    node_type = self.type_map["float"]
                 case "-":
                     node_value = self.builder.fsub(left_value, right_value)
+                    node_type = self.type_map["float"]
                 case "*":
                     node_value = self.builder.fmul(left_value, right_value)
+                    node_type = self.type_map["float"]
                 case "/":
                     node_value = self.builder.fdiv(left_value, right_value)
+                    node_type = self.type_map["float"]
                 case "%":
                     node_value = self.builder.frem(left_value, right_value)
+                    node_type = self.type_map["float"]
                 case "^":
-                    exponentiation = self.standard_functions["float_exponentiation"]
-                    node_value = self.builder.call(exponentiation, [left_value, right_value])
+                    function, node_type = self.environment.lookup("float_exponentiation")
+                    node_value = self.builder.call(function, [left_value, right_value])
+                case "<":
+                    node_value = self.builder.fcmp_ordered("<", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case "<=":
+                    node_value = self.builder.fcmp_ordered("<=", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case ">":
+                    node_value = self.builder.fcmp_ordered(">", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case ">=":
+                    node_value = self.builder.fcmp_ordered(">=", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case "==":
+                    node_value = self.builder.fcmp_ordered("==", left_value, right_value)
+                    node_type = self.type_map["bool"]
+                case "!=":
+                    node_value = self.builder.fcmp_ordered("!=", left_value, right_value)
+                    node_type = self.type_map["bool"]
         return node_value, node_type

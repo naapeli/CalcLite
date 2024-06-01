@@ -5,7 +5,7 @@ class Lexer:
     def __init__(self, code: str) -> None:
         self.code = code
         self.position = 0
-        self.line_number = 0
+        self.line_number = 1
         self.current_character = None
         self._next_character()
 
@@ -17,8 +17,8 @@ class Lexer:
             self.position += 1
 
     def _peek_character(self) -> str:
-        if self.position + 1 >= len(self.code): return None
-        return self.code[self.position + 1]
+        if self.position >= len(self.code): return None
+        return self.code[self.position]
     
     def _skip_white_space(self) -> None:
         while self.current_character in [" ", "\t", "\r"]:
@@ -60,6 +60,7 @@ class Lexer:
         self._skip_white_space()
         token: Token | None = None
 
+        # print(self.current_character, self.code[self.position])
         match self.current_character:
             case "+":
                 token = self._create_token(TokenType.PLUS, self.current_character)
@@ -74,7 +75,29 @@ class Lexer:
             case "%":
                 token = self._create_token(TokenType.MODULO, self.current_character)
             case "=":
-                token = self._create_token(TokenType.EQUALS, self.current_character)
+                if self._peek_character() == "=":
+                    self._next_character()
+                    token = self._create_token(TokenType.DOUBLE_EQUALS, "==")
+                else:
+                    token = self._create_token(TokenType.EQUALS, self.current_character)
+            case "<":
+                if self._peek_character() == "=":
+                    self._next_character()
+                    token = self._create_token(TokenType.LESSTHAN_EQUALS, "<=")
+                else:
+                    token = self._create_token(TokenType.LESSTHAN, self.current_character)
+            case ">":
+                if self._peek_character() == "=":
+                    self._next_character()
+                    token = self._create_token(TokenType.GREATERTHAN_EQUALS, ">=")
+                else:
+                    token = self._create_token(TokenType.GREATERTHAN, self.current_character)
+            case "!":
+                if self._peek_character() == "=":
+                    self._next_character()
+                    token = self._create_token(TokenType.NOT_EQUALS, "!=")
+                else:
+                    token = self._create_token(TokenType.BANG, self.current_character)
             case ":":
                 token = self._create_token(TokenType.COLON, self.current_character)
             case "(":

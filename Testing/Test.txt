@@ -1,11 +1,14 @@
-func main(): int {
-
-    {
-        var b: int = 3
+func main(): bool {
+    var a: float = 0.0
+    if 3 < 2 {
+        a = 2.0
+    } else {
+        a = 1.0
     }
 
-    var a: int = 4
-    a = a * b
+    {
+        var b: int = 0
+    }
 
-    return a
+    return a ^ 2.0 == 1.0
 }

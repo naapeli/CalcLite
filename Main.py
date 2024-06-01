@@ -28,6 +28,7 @@ if __name__ == "__main__":
             if token.type == TokenType.EOF:
                 break
             token = lexer.get_next_token()
+        exit()
     
     parser = Parser(lexer=lexer)
     program = parser.parse()
@@ -35,6 +36,13 @@ if __name__ == "__main__":
         for error in parser.errors:
             print(error)
         exit()
+
+    if DEBUG_PARSER:
+        with open("Testing/AST.json", "w") as f:
+            json.dump(program.json(), f, indent=2)
+        print("AST printed succesfully")
+        exit()
+    
     compiler = Compiler()
     compiler.compile(node=program)
     if compiler.errors:
@@ -44,14 +52,11 @@ if __name__ == "__main__":
 
     module = compiler.module
     module.triple = llvm.get_default_triple()
-
-    if DEBUG_PARSER:
-        with open("Testing/AST.json", "w") as f:
-            json.dump(program.json(), f, indent=2)
     
     if DEBUG_COMPILER:
         with open("Testing/assembly.txt", "w") as f:
             f.write(str(module))
+        exit()
     
     if RUN_CODE:
         llvm.initialize()

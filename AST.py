@@ -11,12 +11,14 @@ class NodeType(Enum):
     BlockStatement = "BlockStatement"
     ReturnStatement = "ReturnStatement"
     AssignStatement = "AssignStatement"
+    IfStatement = "IfStatement"
 
     InfixExpression = "InfixExpression"
 
     IntegerLiteral = "IntegerLiteral"
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
+    BooleanLiteral = "BooleanLiteral"
 
 
 class Node:
@@ -67,6 +69,19 @@ class IdentifierLiteral(Expression):
 
     def type(self) -> NodeType:
         return NodeType.IdentifierLiteral
+    
+    def json(self) -> dict:
+        return {
+            "type": self.type().value,
+            "value": self.value
+        } 
+
+class BooleanLiteral(Expression):
+    def __init__(self, value: bool) -> None:
+        self.value = value
+
+    def type(self) -> NodeType:
+        return NodeType.BooleanLiteral
     
     def json(self) -> dict:
         return {
@@ -177,6 +192,23 @@ class AssignStatement(Statement):
             "type": self.type().value,
             "identifier": self.identifier.json(),
             "expression": self.expression.json()
+        }
+
+class IfStatement(Statement):
+    def __init__(self, condition: Expression, consequence: BlockStatement, alternative: BlockStatement | None = None) -> None:
+        self.condition = condition
+        self.consequence = consequence
+        self.alternative = alternative
+    
+    def type(self) -> NodeType:
+        return NodeType.IfStatement
+
+    def json(self) -> dict:
+        return {
+            "type": self.type().value,
+            "condition": self.condition.json(),
+            "consequence": self.consequence.json(),
+            "alternative": self.alternative.json() if self.alternative else None
         }
 
 

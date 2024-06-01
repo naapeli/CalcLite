@@ -18,6 +18,14 @@ class TokenType(Enum):
     EXPONENT = "EXPONENT"
     MODULO = "MODULO"
 
+    LESSTHAN = "<"
+    GREATERTHAN = ">"
+    DOUBLE_EQUALS = "=="
+    NOT_EQUALS = "!="
+    LESSTHAN_EQUALS = "<="
+    GREATERTHAN_EQUALS = ">="
+    BANG = "!"
+
     EOL = "EOL"  # end of line
     COLON = "COLON"
     LPAREN = "LPAREN"
@@ -30,6 +38,10 @@ class TokenType(Enum):
     VAR = "VAR"
     FUNC = "FUNC"
     RETURN = "RETURN"
+    TRUE = "TRUE"
+    FALSE = "FALSE"
+    IF = "IF"
+    ELSE = "ELSE"
 
     TYPE = "TYPE"
 
@@ -51,9 +63,13 @@ KEYWORDS = {
     "var": TokenType.VAR,
     "func": TokenType.FUNC,
     "return": TokenType.RETURN,
+    "if": TokenType.IF,
+    "else": TokenType.ELSE,
+    "true": TokenType.TRUE,
+    "false": TokenType.FALSE,
 }
 
-TYPES = ["int", "float", "string"]
+TYPES = ["int", "float", "string", "bool"]
 
 def get_identifier(identifier: str) -> TokenType:
     keyword = KEYWORDS.get(identifier)

@@ -3,9 +3,9 @@ from Token import Token, TokenType
 from enum import Enum, auto
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement, AssignStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement, AssignStatement, IfStatement
 from AST import InfixExpression
-from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 
 
 class PrecedenceTypes(Enum):
@@ -26,7 +26,14 @@ PRECEDENCES = {
     TokenType.MULTIPLY: PrecedenceTypes.P_PRODUCT,
     TokenType.DIVIDE: PrecedenceTypes.P_PRODUCT,
     TokenType.MODULO: PrecedenceTypes.P_PRODUCT,
-    TokenType.EXPONENT: PrecedenceTypes.P_EXPONENT
+    TokenType.EXPONENT: PrecedenceTypes.P_EXPONENT,
+    TokenType.DOUBLE_EQUALS: PrecedenceTypes.P_EQUALS,
+    TokenType.NOT_EQUALS: PrecedenceTypes.P_EQUALS,
+    TokenType.LESSTHAN: PrecedenceTypes.P_LESSGREATER,
+    TokenType.LESSTHAN_EQUALS: PrecedenceTypes.P_LESSGREATER,
+    TokenType.GREATERTHAN: PrecedenceTypes.P_LESSGREATER,
+    TokenType.GREATERTHAN_EQUALS: PrecedenceTypes.P_LESSGREATER,
+    TokenType.BANG: PrecedenceTypes.P_SUM
 }
 
 
@@ -41,6 +48,11 @@ class Parser:
             TokenType.FLOAT: self._parse_float_literal,
             TokenType.LPAREN: self._parse_grouped_expression,
             TokenType.IDENTIFIER: self._parse_identifier,
+            TokenType.IF: self._parse_if_statement,
+            TokenType.TRUE: self._parse_boolean_literal,
+            TokenType.FALSE: self._parse_boolean_literal,
+            #TokenType.MINUS: self._parse_minus_literal, TODO: implement minus in front of a number
+            #TokenType.BANG: self._parse_bang_expression, TODO: implement parsing bang
         }
         self.infix_parse_functions = {
             TokenType.PLUS: self._parse_infix_expression,
@@ -49,6 +61,12 @@ class Parser:
             TokenType.DIVIDE: self._parse_infix_expression,
             TokenType.EXPONENT: self._parse_infix_expression,
             TokenType.MODULO: self._parse_infix_expression,
+            TokenType.DOUBLE_EQUALS: self._parse_infix_expression,
+            TokenType.NOT_EQUALS: self._parse_infix_expression,
+            TokenType.LESSTHAN: self._parse_infix_expression,
+            TokenType.LESSTHAN_EQUALS: self._parse_infix_expression,
+            TokenType.GREATERTHAN: self._parse_infix_expression,
+            TokenType.GREATERTHAN_EQUALS: self._parse_infix_expression,
         }
         self._get_next_token()
         self._get_next_token()
@@ -170,7 +188,7 @@ class Parser:
     def _parse_block_statement(self) -> BlockStatement:
         statements = []
         
-        # skip over TokenType.LBRACE and possible end of line
+        # skip over TokenType.LBRACE
         self._get_next_token()
 
         while not self._current_token_is(TokenType.RBRACE) and not self._current_token_is(TokenType.EOF):
@@ -182,7 +200,9 @@ class Parser:
             if statement is not None:
                 statements.append(statement)
             self._get_next_token()
-
+        
+        # skip over the last RBRACE
+        self._get_next_token()
         return BlockStatement(statements)
     
     def _parse_assignment_statement(self):
@@ -193,6 +213,22 @@ class Parser:
         if expression is None: return None
 
         return AssignStatement(identifier, expression)
+    
+    def _parse_if_statement(self):
+        self._get_next_token()
+        condition = self._parse_expression(PrecedenceTypes.P_LOWEST)
+        
+        if not self._expect_peek(TokenType.LBRACE):
+            return None
+        
+        consequence = self._parse_block_statement()
+        alternative = None
+
+        if self._current_token_is(TokenType.ELSE):
+            self._get_next_token()
+            alternative = self._parse_block_statement()
+        
+        return IfStatement(condition, consequence, alternative)
 
     
     def _parse_expression(self, precedence: PrecedenceTypes) -> Expression | None:
@@ -229,6 +265,7 @@ class Parser:
             return None
         return grouped_expression
 
+
     def _parse_int_literal(self) -> IntegerLiteral:
         try:
             value = int(self.current_token.literal)
@@ -247,3 +284,6 @@ class Parser:
     
     def _parse_identifier(self) -> IdentifierLiteral:
         return IdentifierLiteral(value=self.current_token.literal)
+    
+    def _parse_boolean_literal(self) -> BooleanLiteral:
+        return BooleanLiteral(self._current_token_is(TokenType.TRUE))
