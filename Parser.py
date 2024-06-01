@@ -3,7 +3,7 @@ from Token import Token, TokenType
 from enum import Enum, auto
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement, AssignStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 
@@ -99,6 +99,9 @@ class Parser:
         return Program(statements)
     
     def _parse_statement(self) -> Statement:
+        if self.current_token.type == TokenType.IDENTIFIER and self._peek_token_is(TokenType.EQUALS):
+            return self._parse_assignment_statement()
+
         match self.current_token.type:
             case TokenType.VAR:
                 return self._parse_var_statement()
@@ -181,6 +184,15 @@ class Parser:
             self._get_next_token()
 
         return BlockStatement(statements)
+    
+    def _parse_assignment_statement(self):
+        identifier = IdentifierLiteral(self.current_token.literal)
+        self._get_next_token()
+        self._get_next_token()
+        expression = self._parse_expression(PrecedenceTypes.P_LOWEST)
+        if expression is None: return None
+
+        return AssignStatement(identifier, expression)
 
     
     def _parse_expression(self, precedence: PrecedenceTypes) -> Expression | None:

@@ -1,7 +1,7 @@
 from llvmlite import ir
 
 from AST import Node, NodeType, Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement
+from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement, AssignStatement
 from AST import InfixExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
 from Environment import Environment
@@ -16,6 +16,7 @@ class Compiler:
         self.module: ir.Module = ir.Module("Main")
         self.builder: ir.IRBuilder = ir.IRBuilder()
         self.environment = Environment(records={})
+        self.errors: list[str] = []
         self.standard_functions = {
             "float_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["float"], [self.type_map["float"], self.type_map["float"]]), name="llvm.pow.f32"),
             "int_exponentiation": ir.Function(self.module, ir.FunctionType(self.type_map["int"], [self.type_map["int"], self.type_map["int"]]), name="llvm.pow.i32"),
@@ -36,6 +37,8 @@ class Compiler:
                 self._visit_block_statement(node)
             case NodeType.ReturnStatement:
                 self._visit_return_statement(node)
+            case NodeType.AssignStatement:
+                self._visit_assign_statement(node)
 
             case NodeType.InfixExpression:
                 self._visit_infix_expression(node)
@@ -57,17 +60,17 @@ class Compiler:
                 return self._visit_infix_expression(node)
 
     def _visit_program(self, node: Program):
-        function_type = ir.FunctionType(self.type_map["int"], [])
-        main_function = ir.Function(self.module, function_type, name="Main")
+        # function_type = ir.FunctionType(self.type_map["int"], [])
+        # main_function = ir.Function(self.module, function_type, name="main")
 
-        block = main_function.append_basic_block("Main function")
-        self.builder = ir.IRBuilder(block)
+        # block = main_function.append_basic_block("Main function")
+        # self.builder = ir.IRBuilder(block)
 
         for statement in node.statements:
             self.compile(statement)
         
-        return_value: ir.Constant = ir.Constant(self.type_map["int"], 0)
-        self.builder.ret(return_value)
+        # return_value: ir.Constant = ir.Constant(self.type_map["int"], 0)
+        # self.builder.ret(return_value)
     
     def _visit_expression_statement(self, node: ExpressionStatement):
         self.compile(node.expression)
@@ -83,9 +86,7 @@ class Compiler:
             self.environment.define(name, pointer, type)
         # if variable exists in current scope
         else:
-            # TODO: raise an error trying to re-declare a variable???
-            pointer, _ = self.environment.lookup(name)
-            self.builder.store(value, pointer)
+            self.errors.append(f"Identifier {name} tried to be declared more than once.")
 
     def _visit_function_statement(self, node: FunctionStatement):
         name = node.name.value
@@ -119,6 +120,19 @@ class Compiler:
         value, type = self._resolve_value(node.return_value)
 
         self.builder.ret(value)
+    
+    def _visit_assign_statement(self, node: AssignStatement):
+        variable_name = node.identifier.value
+        value, type = self._resolve_value(node.expression)
+
+        if self.environment.lookup(variable_name) is None:
+            self.errors.append(f"Identifier {variable_name} was not declared before re-assignment.")
+        else:
+            pointer, type2 = self.environment.lookup(variable_name)
+            if type != type2:
+                self.errors.append(f"Identifier {variable_name} of type {type2} tried to be re-assigned to {type}.")
+            else:
+                self.builder.store(value, pointer)
 
     
     def _visit_infix_expression(self, node: InfixExpression) -> tuple[ir.Value, ir.Type]:

@@ -1,10 +1,11 @@
-func f(): int {
+func main(): int {
 
     {
-        var b: float = 3.14159
+        var b: int = 3
     }
 
     var a: int = 4
+    a = a * b
 
     return a
 }

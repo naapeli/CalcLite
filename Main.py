@@ -37,6 +37,10 @@ if __name__ == "__main__":
         exit()
     compiler = Compiler()
     compiler.compile(node=program)
+    if compiler.errors:
+        for error in compiler.errors:
+            print(error)
+        exit()
 
     module = compiler.module
     module.triple = llvm.get_default_triple()
@@ -66,7 +70,7 @@ if __name__ == "__main__":
         engine = llvm.create_mcjit_compiler(parsed_assembly, target_machine)
         engine.finalize_object()
 
-        entry = engine.get_function_address("Main")
+        entry = engine.get_function_address("main")
         cfunc = CFUNCTYPE(c_int)(entry)
 
         start = perf_counter()

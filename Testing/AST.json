@@ -6,7 +6,7 @@
         "type": "FunctionStatement",
         "name": {
           "type": "IdentifierLiteral",
-          "value": "f"
+          "value": "main"
         },
         "return_type": "int",
         "parameters": [],
@@ -46,6 +46,27 @@
                   "value": 4
                 },
                 "value_type": "int"
+              }
+            },
+            {
+              "AssignStatement": {
+                "type": "AssignStatement",
+                "identifier": {
+                  "type": "IdentifierLiteral",
+                  "value": "a"
+                },
+                "expression": {
+                  "type": "InfixExpression",
+                  "left_node": {
+                    "type": "IdentifierLiteral",
+                    "value": "a"
+                  },
+                  "operator": "*",
+                  "right_node": {
+                    "type": "IdentifierLiteral",
+                    "value": "b"
+                  }
+                }
               }
             },
             {
