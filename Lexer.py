@@ -100,6 +100,8 @@ class Lexer:
                     token = self._create_token(TokenType.BANG, self.current_character)
             case ":":
                 token = self._create_token(TokenType.COLON, self.current_character)
+            case ",":
+                token = self._create_token(TokenType.COMMA, self.current_character)
             case "(":
                 token = self._create_token(TokenType.LPAREN, self.current_character)
             case ")":

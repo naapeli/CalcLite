@@ -56,6 +56,7 @@ if __name__ == "__main__":
     if DEBUG_COMPILER:
         with open("Testing/assembly.txt", "w") as f:
             f.write(str(module))
+        print("Assembly printed succesfully")
         exit()
     
     if RUN_CODE:

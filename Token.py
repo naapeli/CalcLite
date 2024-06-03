@@ -28,6 +28,7 @@ class TokenType(Enum):
 
     EOL = "EOL"  # end of line
     COLON = "COLON"
+    COMMA = "COMMA"
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
     LBRACE = "LBRACE"

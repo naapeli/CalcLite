@@ -6,105 +6,76 @@
         "type": "FunctionStatement",
         "name": {
           "type": "IdentifierLiteral",
-          "value": "main"
+          "value": "add"
         },
-        "return_type": "bool",
-        "parameters": [],
+        "return_type": "int",
+        "parameters": [
+          {
+            "type": "FunctionParameter",
+            "name": "a",
+            "value_type": "int"
+          },
+          {
+            "type": "FunctionParameter",
+            "name": "b",
+            "value_type": "int"
+          }
+        ],
         "body": {
           "type": "BlockStatement",
           "statements": [
-            {
-              "VarStatement": {
-                "type": "VarStatement",
-                "name": {
-                  "type": "IdentifierLiteral",
-                  "value": "a"
-                },
-                "value": {
-                  "type": "IntegerLiteral",
-                  "value": 0
-                },
-                "value_type": "int"
-              }
-            },
-            {
-              "ExpressionStatement": {
-                "type": "ExpressionStatement",
-                "expression": {
-                  "type": "IfStatement",
-                  "condition": {
-                    "type": "InfixExpression",
-                    "left_node": {
-                      "type": "IntegerLiteral",
-                      "value": 3
-                    },
-                    "operator": "<",
-                    "right_node": {
-                      "type": "IntegerLiteral",
-                      "value": 2
-                    }
-                  },
-                  "consequence": {
-                    "type": "BlockStatement",
-                    "statements": [
-                      {
-                        "AssignStatement": {
-                          "type": "AssignStatement",
-                          "identifier": {
-                            "type": "IdentifierLiteral",
-                            "value": "a"
-                          },
-                          "expression": {
-                            "type": "IntegerLiteral",
-                            "value": 1
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  "alternative": {
-                    "type": "BlockStatement",
-                    "statements": [
-                      {
-                        "AssignStatement": {
-                          "type": "AssignStatement",
-                          "identifier": {
-                            "type": "IdentifierLiteral",
-                            "value": "a"
-                          },
-                          "expression": {
-                            "type": "IntegerLiteral",
-                            "value": 2
-                          }
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            },
             {
               "ReturnStatement": {
                 "type": "ReturnStatement",
                 "return_value": {
                   "type": "InfixExpression",
                   "left_node": {
-                    "type": "InfixExpression",
-                    "left_node": {
-                      "type": "IdentifierLiteral",
-                      "value": "a"
+                    "type": "IdentifierLiteral",
+                    "value": "a"
+                  },
+                  "operator": "+",
+                  "right_node": {
+                    "type": "IdentifierLiteral",
+                    "value": "b"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "FunctionStatement": {
+        "type": "FunctionStatement",
+        "name": {
+          "type": "IdentifierLiteral",
+          "value": "main"
+        },
+        "return_type": "int",
+        "parameters": [],
+        "body": {
+          "type": "BlockStatement",
+          "statements": [
+            {
+              "ReturnStatement": {
+                "type": "ReturnStatement",
+                "return_value": {
+                  "type": "CallExpression",
+                  "name": {
+                    "type": "IdentifierLiteral",
+                    "value": "test"
+                  },
+                  "parameters": [
+                    {
+                      "type": "IntegerLiteral",
+                      "value": 1
                     },
-                    "operator": "^",
-                    "right_node": {
+                    {
                       "type": "IntegerLiteral",
                       "value": 2
                     }
-                  },
-                  "operator": "==",
-                  "right_node": {
-                    "type": "IntegerLiteral",
-                    "value": 1
-                  }
+                  ]
                 }
               }
             }

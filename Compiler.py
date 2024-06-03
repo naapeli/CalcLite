@@ -2,8 +2,9 @@ from llvmlite import ir
 
 from AST import Node, NodeType, Statement, Expression, Program
 from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
-from AST import InfixExpression
+from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
+from AST import FunctionParameter
 from Environment import Environment
 
 
@@ -62,6 +63,8 @@ class Compiler:
 
             case NodeType.InfixExpression:
                 self._visit_infix_expression(node)
+            case NodeType.CallExpression:
+                self._visit_call_expression(node)
     
     def _resolve_value(self, node: Expression, value_type: str = None) -> tuple[ir.Value, ir.Type]:
         match node.type():
@@ -81,6 +84,8 @@ class Compiler:
             
             case NodeType.InfixExpression:
                 return self._visit_infix_expression(node)
+            case NodeType.CallExpression:
+                return self._visit_call_expression(node)
 
     def _visit_program(self, node: Program):
         # function_type = ir.FunctionType(self.type_map["int"], [])
@@ -115,8 +120,8 @@ class Compiler:
         name = node.name.value
         body = node.body
 
-        parameter_names = [parameter.value for parameter in node.parameters]
-        parameter_types: list[ir.Type] = []
+        parameter_names = [parameter.name for parameter in node.parameters]
+        parameter_types: list[ir.Type] = [self.type_map[parameter.value_type] for parameter in node.parameters]
         return_type: ir.Type = self.type_map[node.return_type]
 
         function_type = ir.FunctionType(return_type, parameter_types)
@@ -127,7 +132,13 @@ class Compiler:
         self.builder = ir.IRBuilder(block)
         previous_environment = self.environment
         self.environment = Environment({}, previous_environment)
+        # define function for recursion
         self.environment.define(name, function, return_type)
+
+        for i, parameter_type in enumerate(parameter_types):
+            pointer = self.builder.alloca(parameter_type)
+            self.builder.store(function.args[i], pointer)
+            self.environment.define(parameter_names[i], pointer, parameter_type)
 
         self.compile(body)
 
@@ -255,3 +266,19 @@ class Compiler:
                     node_value = self.builder.fcmp_ordered("!=", left_value, right_value)
                     node_type = self.type_map["bool"]
         return node_value, node_type
+    
+    def _visit_call_expression(self, node: CallExpression) -> tuple[ir.Value, ir.Type]:
+        arguments = []
+        types = []
+        for expression in node.parameters:
+            value, type = self._resolve_value(expression)
+            arguments.append(value)
+            types.append(type)
+
+        match node.name.value:
+            case "print":
+                pass
+            case _:
+                function, return_type = self.environment.lookup(node.name.value)
+                return_value = self.builder.call(function, arguments)
+        return return_value, return_type

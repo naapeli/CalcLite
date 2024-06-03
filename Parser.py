@@ -4,8 +4,9 @@ from enum import Enum, auto
 
 from AST import Statement, Expression, Program
 from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement, AssignStatement, IfStatement
-from AST import InfixExpression
+from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
+from AST import FunctionParameter
 
 
 class PrecedenceTypes(Enum):
@@ -33,6 +34,7 @@ PRECEDENCES = {
     TokenType.LESSTHAN_EQUALS: PrecedenceTypes.P_LESSGREATER,
     TokenType.GREATERTHAN: PrecedenceTypes.P_LESSGREATER,
     TokenType.GREATERTHAN_EQUALS: PrecedenceTypes.P_LESSGREATER,
+    TokenType.LPAREN: PrecedenceTypes.P_CALL,
     TokenType.BANG: PrecedenceTypes.P_SUM
 }
 
@@ -67,6 +69,7 @@ class Parser:
             TokenType.LESSTHAN_EQUALS: self._parse_infix_expression,
             TokenType.GREATERTHAN: self._parse_infix_expression,
             TokenType.GREATERTHAN_EQUALS: self._parse_infix_expression,
+            TokenType.LPAREN: self._parse_call_expression,
         }
         self._get_next_token()
         self._get_next_token()
@@ -166,8 +169,7 @@ class Parser:
         if not self._expect_peek(TokenType.IDENTIFIER): return None
         function_name = IdentifierLiteral(self.current_token.literal)
         if not self._expect_peek(TokenType.LPAREN): return None
-        parameters = [] # TODO: parse parameter list and remove checking RPAREN
-        if not self._expect_peek(TokenType.RPAREN): return None
+        parameters = self._parse_function_parameters()
         if not self._expect_peek(TokenType.COLON): return None
         if not self._expect_peek(TokenType.TYPE): return None
         return_type = self.current_token.literal
@@ -175,6 +177,36 @@ class Parser:
         body = self._parse_block_statement()
 
         return FunctionStatement(parameters, body, function_name, return_type)
+    
+    def _parse_function_parameters(self) -> list[FunctionParameter]:
+        parameters = []
+        # skip over LPAREN
+        self._get_next_token()
+        # if the next character is RPAREN, return parameters
+        if self._current_token_is(TokenType.RPAREN):
+            return parameters
+
+        while True:
+            parameter_name = self.current_token.literal
+            if not self._expect_peek(TokenType.COLON):
+                return None
+            # skip over COLON
+            self._get_next_token()
+            parameter_type = self.current_token.literal
+            parameters.append(FunctionParameter(parameter_name, parameter_type))
+            # skip to RPAREN or COMMA
+            self._get_next_token()
+
+            # if RPAREN, break loop and return parameters
+            if self._current_token_is(TokenType.RPAREN):
+                return parameters
+            # elif COMMA, continue loop to the next parameter
+            elif self._current_token_is(TokenType.COMMA):
+                self._get_next_token()
+            # otherwise error
+            else:
+                return None
+
 
     def _parse_return_statement(self) -> ReturnStatement:
         # skip over TokenType.RETURN
@@ -264,6 +296,31 @@ class Parser:
         if not self._expect_peek(TokenType.RPAREN):
             return None
         return grouped_expression
+    
+    def _parse_call_expression(self, name: IdentifierLiteral) -> CallExpression:
+        parameters = self._parse_expression_list(TokenType.RPAREN)
+
+        return CallExpression(name, parameters)
+    
+    def _parse_expression_list(self, end_token: TokenType) -> list[Expression]:
+        expression_list = []
+        if self._peek_token_is(end_token):
+            self._get_next_token()
+            return expression_list
+
+        while True:
+            self._get_next_token()
+            # we must have an expression
+            expression_list.append(self._parse_expression(PrecedenceTypes.P_LOWEST))
+
+            # if end or comma, continue
+            if self._peek_token_is(TokenType.COMMA):
+                self._get_next_token()
+            elif self._peek_token_is(end_token):
+                self._get_next_token()
+                return expression_list
+            else:
+                return None
 
 
     def _parse_int_literal(self) -> IntegerLiteral:

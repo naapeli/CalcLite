@@ -14,11 +14,14 @@ class NodeType(Enum):
     IfStatement = "IfStatement"
 
     InfixExpression = "InfixExpression"
+    CallExpression = "CallExpression"
 
     IntegerLiteral = "IntegerLiteral"
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
     BooleanLiteral = "BooleanLiteral"
+
+    FunctionParameter = "FunctionParameter"
 
 
 class Node:
@@ -104,6 +107,22 @@ class Program(Node):
         }
     
 
+class FunctionParameter(Expression):
+    def __init__(self, name: str, value_type: str) -> None:
+        self.name = name
+        self.value_type = value_type
+    
+    def type(self) -> NodeType:
+        return NodeType.FunctionParameter
+
+    def json(self) -> dict:
+        return {
+            "type": self.type().value,
+            "name": self.name,
+            "value_type": self.value_type
+        }
+    
+
 class ExpressionStatement(Statement):
     def __init__(self, expression: Expression) -> None:
         self.expression = expression
@@ -161,7 +180,7 @@ class ReturnStatement(Statement):
         }
 
 class FunctionStatement(Statement):
-    def __init__(self, parameters: list[IdentifierLiteral], body: BlockStatement, name: IdentifierLiteral, return_type: str) -> None:
+    def __init__(self, parameters: list[FunctionParameter], body: BlockStatement, name: IdentifierLiteral, return_type: str) -> None:
         self.parameters = parameters
         self.body = body
         self.name = name
@@ -227,4 +246,19 @@ class InfixExpression(Expression):
             "left_node": self.left_node.json(),
             "operator": self.operator,
             "right_node": self.right_node.json()
+        }
+    
+class CallExpression(Expression):
+    def __init__(self, name: IdentifierLiteral, parameters: list[Expression]) -> None:
+        self.name = name
+        self.parameters = parameters
+
+    def type(self) -> NodeType:
+        return NodeType.CallExpression
+    
+    def json(self) -> dict:
+        return {
+            "type": self.type().value,
+            "name": self.name.json(),
+            "parameters": [parameter.json() for parameter in self.parameters],
         }
