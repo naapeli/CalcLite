@@ -80,9 +80,7 @@ if __name__ == "__main__":
         cfunc = CFUNCTYPE(c_int)(entry)
 
         start = perf_counter()
-
         result = cfunc()
-
         end = perf_counter()
 
         print(f"Program returned: {result}, Runtime: {end - start} ms.")

@@ -41,6 +41,21 @@ class Compiler:
         float_exponentiation = ir.Function(self.module, ir.FunctionType(self.type_map["float"], [self.type_map["float"], self.type_map["float"]]), name="llvm.pow.f32")
         self.environment.define("float_exponentiation", float_exponentiation, self.type_map["float"])
 
+        # initialise print
+        printf_ty = ir.FunctionType(ir.VoidType(), [ir.IntType(8).as_pointer()], var_arg=True)
+        printf = ir.Function(self.module, printf_ty, name="printf")
+        self.environment.define("print", printf, ir.VoidType())
+
+        str_format = "%.10f"
+        format_str_var = ir.GlobalVariable(self.module, ir.ArrayType(ir.IntType(8), len(str_format)), name=f"float_string_format")
+        format_str_var.initializer = ir.Constant(ir.ArrayType(ir.IntType(8), len(str_format)), bytearray(str_format.encode("utf-8")))
+        self.environment.define("float_string_format", format_str_var, ir.IntType(8).as_pointer())
+
+        str_format = "%d\n"
+        format_str_var = ir.GlobalVariable(self.module, ir.ArrayType(ir.IntType(8), len(str_format)), name=f"int_string_format")
+        format_str_var.initializer = ir.Constant(ir.ArrayType(ir.IntType(8), len(str_format)), bytearray(str_format.encode("utf-8")))
+        self.environment.define("int_string_format", format_str_var, ir.IntType(8).as_pointer())
+
     def compile(self, node: Node):
         match node.type():
             case NodeType.Program:
@@ -88,17 +103,17 @@ class Compiler:
                 return self._visit_call_expression(node)
 
     def _visit_program(self, node: Program):
-        # function_type = ir.FunctionType(self.type_map["int"], [])
-        # main_function = ir.Function(self.module, function_type, name="main")
+        function_type = ir.FunctionType(self.type_map["int"], [])
+        main_function = ir.Function(self.module, function_type, name="main")
 
-        # block = main_function.append_basic_block("Main function")
-        # self.builder = ir.IRBuilder(block)
+        block = main_function.append_basic_block("Main function")
+        self.builder = ir.IRBuilder(block)
 
         for statement in node.statements:
             self.compile(statement)
         
-        # return_value: ir.Constant = ir.Constant(self.type_map["int"], 0)
-        # self.builder.ret(return_value)
+        return_value: ir.Constant = ir.Constant(self.type_map["int"], 0)
+        self.builder.ret(return_value)
     
     def _visit_expression_statement(self, node: ExpressionStatement):
         self.compile(node.expression)
@@ -268,8 +283,8 @@ class Compiler:
         return node_value, node_type
     
     def _visit_call_expression(self, node: CallExpression) -> tuple[ir.Value, ir.Type]:
-        arguments = []
-        types = []
+        arguments: list[ir.Value] = []
+        types: list[ir.Type] = []
         for expression in node.parameters:
             value, type = self._resolve_value(expression)
             arguments.append(value)
@@ -277,7 +292,18 @@ class Compiler:
 
         match node.name.value:
             case "print":
-                pass
+                function, return_type = self.environment.lookup("print")
+                for value, type in zip(arguments, types):
+                    if type == self.type_map["int"]:
+                        str_format = "%d\n"
+                        format_str_var, _ = self.environment.lookup("int_string_format")
+                    elif type == self.type_map["float"]:
+                        # convert to double to pass to printf
+                        value = self.builder.fpext(value, ir.DoubleType())
+                        format_str_var, _ = self.environment.lookup("float_string_format")
+                    fmt_ptr = self.builder.bitcast(format_str_var, ir.IntType(8).as_pointer())
+                    return_value = self.builder.call(function, [fmt_ptr, value])
+
             case _:
                 function, return_type = self.environment.lookup(node.name.value)
                 return_value = self.builder.call(function, arguments)

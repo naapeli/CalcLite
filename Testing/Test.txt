@@ -9,6 +9,6 @@ func fibonacci(n: int): int {
 }
 
 
-func main(): int {
-    return fibonacci(40)
-}
+var a: float = 3.1415926535
+print(a)
+print(fibonacci(20))
