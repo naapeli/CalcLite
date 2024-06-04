@@ -3,7 +3,8 @@ from Token import Token, TokenType
 from enum import Enum, auto
 
 from AST import Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement, AssignStatement, IfStatement
+from AST import ExpressionStatement, VarStatement, FunctionStatement, ReturnStatement, BlockStatement, AssignStatement
+from AST import IfStatement, WhileStatement
 from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 from AST import FunctionParameter
@@ -132,6 +133,8 @@ class Parser:
                 return self._parse_return_statement()
             case TokenType.LBRACE:
                 return self._parse_block_statement()
+            case TokenType.WHILE:
+                return self._parse_while_statement()
             case _:
                 return self._parse_expression_statement()
 
@@ -207,7 +210,6 @@ class Parser:
             else:
                 return None
 
-
     def _parse_return_statement(self) -> ReturnStatement:
         # skip over TokenType.RETURN
         self._get_next_token()
@@ -261,6 +263,17 @@ class Parser:
             alternative = self._parse_block_statement()
         
         return IfStatement(condition, consequence, alternative)
+    
+    def _parse_while_statement(self):
+        self._get_next_token()
+        condition = self._parse_expression(PrecedenceTypes.P_LOWEST)
+
+        if not self._expect_peek(TokenType.LBRACE):
+            return None
+        
+        body = self._parse_block_statement()
+
+        return WhileStatement(condition, body)
 
     
     def _parse_expression(self, precedence: PrecedenceTypes) -> Expression | None:

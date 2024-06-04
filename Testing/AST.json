@@ -6,18 +6,13 @@
         "type": "FunctionStatement",
         "name": {
           "type": "IdentifierLiteral",
-          "value": "add"
+          "value": "fibonacci"
         },
         "return_type": "int",
         "parameters": [
           {
             "type": "FunctionParameter",
-            "name": "a",
-            "value_type": "int"
-          },
-          {
-            "type": "FunctionParameter",
-            "name": "b",
+            "name": "n",
             "value_type": "int"
           }
         ],
@@ -25,18 +20,122 @@
           "type": "BlockStatement",
           "statements": [
             {
+              "ExpressionStatement": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "IfStatement",
+                  "condition": {
+                    "type": "InfixExpression",
+                    "left_node": {
+                      "type": "IdentifierLiteral",
+                      "value": "n"
+                    },
+                    "operator": "==",
+                    "right_node": {
+                      "type": "IntegerLiteral",
+                      "value": 0
+                    }
+                  },
+                  "consequence": {
+                    "type": "BlockStatement",
+                    "statements": [
+                      {
+                        "ReturnStatement": {
+                          "type": "ReturnStatement",
+                          "return_value": {
+                            "type": "IntegerLiteral",
+                            "value": 0
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "alternative": null
+                }
+              }
+            },
+            {
+              "ExpressionStatement": {
+                "type": "ExpressionStatement",
+                "expression": {
+                  "type": "IfStatement",
+                  "condition": {
+                    "type": "InfixExpression",
+                    "left_node": {
+                      "type": "IdentifierLiteral",
+                      "value": "n"
+                    },
+                    "operator": "==",
+                    "right_node": {
+                      "type": "IntegerLiteral",
+                      "value": 1
+                    }
+                  },
+                  "consequence": {
+                    "type": "BlockStatement",
+                    "statements": [
+                      {
+                        "ReturnStatement": {
+                          "type": "ReturnStatement",
+                          "return_value": {
+                            "type": "IntegerLiteral",
+                            "value": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "alternative": null
+                }
+              }
+            },
+            {
               "ReturnStatement": {
                 "type": "ReturnStatement",
                 "return_value": {
                   "type": "InfixExpression",
                   "left_node": {
-                    "type": "IdentifierLiteral",
-                    "value": "a"
+                    "type": "CallExpression",
+                    "name": {
+                      "type": "IdentifierLiteral",
+                      "value": "fibonacci"
+                    },
+                    "parameters": [
+                      {
+                        "type": "InfixExpression",
+                        "left_node": {
+                          "type": "IdentifierLiteral",
+                          "value": "n"
+                        },
+                        "operator": "-",
+                        "right_node": {
+                          "type": "IntegerLiteral",
+                          "value": 1
+                        }
+                      }
+                    ]
                   },
                   "operator": "+",
                   "right_node": {
-                    "type": "IdentifierLiteral",
-                    "value": "b"
+                    "type": "CallExpression",
+                    "name": {
+                      "type": "IdentifierLiteral",
+                      "value": "fibonacci"
+                    },
+                    "parameters": [
+                      {
+                        "type": "InfixExpression",
+                        "left_node": {
+                          "type": "IdentifierLiteral",
+                          "value": "n"
+                        },
+                        "operator": "-",
+                        "right_node": {
+                          "type": "IntegerLiteral",
+                          "value": 2
+                        }
+                      }
+                    ]
                   }
                 }
               }
@@ -46,38 +145,120 @@
       }
     },
     {
-      "FunctionStatement": {
-        "type": "FunctionStatement",
+      "VarStatement": {
+        "type": "VarStatement",
         "name": {
           "type": "IdentifierLiteral",
-          "value": "main"
+          "value": "a"
         },
-        "return_type": "int",
-        "parameters": [],
+        "value": {
+          "type": "FloatLiteral",
+          "value": 3.1415926535
+        },
+        "value_type": "float"
+      }
+    },
+    {
+      "ExpressionStatement": {
+        "type": "ExpressionStatement",
+        "expression": {
+          "type": "CallExpression",
+          "name": {
+            "type": "IdentifierLiteral",
+            "value": "print"
+          },
+          "parameters": [
+            {
+              "type": "IdentifierLiteral",
+              "value": "a"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "ExpressionStatement": {
+        "type": "ExpressionStatement",
+        "expression": {
+          "type": "CallExpression",
+          "name": {
+            "type": "IdentifierLiteral",
+            "value": "print"
+          },
+          "parameters": [
+            {
+              "type": "CallExpression",
+              "name": {
+                "type": "IdentifierLiteral",
+                "value": "fibonacci"
+              },
+              "parameters": [
+                {
+                  "type": "IntegerLiteral",
+                  "value": 20
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "WhileStatement": {
+        "type": "WhileStatement",
+        "condition": {
+          "type": "InfixExpression",
+          "left_node": {
+            "type": "IdentifierLiteral",
+            "value": "a"
+          },
+          "operator": "<",
+          "right_node": {
+            "type": "IntegerLiteral",
+            "value": 6
+          }
+        },
         "body": {
           "type": "BlockStatement",
           "statements": [
             {
-              "ReturnStatement": {
-                "type": "ReturnStatement",
-                "return_value": {
-                  "type": "CallExpression",
-                  "name": {
+              "AssignStatement": {
+                "type": "AssignStatement",
+                "identifier": {
+                  "type": "IdentifierLiteral",
+                  "value": "a"
+                },
+                "expression": {
+                  "type": "InfixExpression",
+                  "left_node": {
                     "type": "IdentifierLiteral",
-                    "value": "test"
+                    "value": "a"
                   },
-                  "parameters": [
-                    {
-                      "type": "IntegerLiteral",
-                      "value": 1
-                    },
-                    {
-                      "type": "IntegerLiteral",
-                      "value": 2
-                    }
-                  ]
+                  "operator": "+",
+                  "right_node": {
+                    "type": "IntegerLiteral",
+                    "value": 1
+                  }
                 }
               }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "ExpressionStatement": {
+        "type": "ExpressionStatement",
+        "expression": {
+          "type": "CallExpression",
+          "name": {
+            "type": "IdentifierLiteral",
+            "value": "print"
+          },
+          "parameters": [
+            {
+              "type": "IdentifierLiteral",
+              "value": "a"
             }
           ]
         }

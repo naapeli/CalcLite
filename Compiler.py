@@ -1,7 +1,8 @@
 from llvmlite import ir
 
 from AST import Node, NodeType, Statement, Expression, Program
-from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement, AssignStatement, IfStatement
+from AST import ExpressionStatement, VarStatement, BlockStatement, FunctionStatement, ReturnStatement, AssignStatement
+from AST import IfStatement, WhileStatement
 from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 from AST import FunctionParameter
@@ -75,6 +76,8 @@ class Compiler:
                 self._visit_assign_statement(node)
             case NodeType.IfStatement:
                 self._visit_if_statement(node)
+            case NodeType.WhileStatement:
+                self._visit_while_statement(node)
 
             case NodeType.InfixExpression:
                 self._visit_infix_expression(node)
@@ -195,6 +198,26 @@ class Compiler:
         else:
             with self.builder.if_then(test):
                 self.compile(node.consequence)
+    
+    def _visit_while_statement(self, node: WhileStatement):
+        current_function = self.builder.block.function
+        cond_block = current_function.append_basic_block(name="cond")
+        body_block = current_function.append_basic_block(name="body")
+        after_block = current_function.append_basic_block(name="after")
+
+        # condition branch
+        self.builder.branch(cond_block)
+        self.builder.position_at_end(cond_block)
+        test, _ = self._resolve_value(node.condition)
+        self.builder.cbranch(test, body_block, after_block)
+
+        # body branch
+        self.builder.position_at_end(body_block)
+        self.compile(node.body)
+        self.builder.branch(cond_block)
+
+        # after loop
+        self.builder.position_at_end(after_block)
 
     
     def _visit_infix_expression(self, node: InfixExpression) -> tuple[ir.Value, ir.Type]:

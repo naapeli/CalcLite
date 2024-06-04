@@ -43,6 +43,7 @@ class TokenType(Enum):
     FALSE = "FALSE"
     IF = "IF"
     ELSE = "ELSE"
+    WHILE = "WHILE"
 
     TYPE = "TYPE"
 
@@ -68,6 +69,7 @@ KEYWORDS = {
     "else": TokenType.ELSE,
     "true": TokenType.TRUE,
     "false": TokenType.FALSE,
+    "while": TokenType.WHILE,
 }
 
 TYPES = ["int", "float", "string", "bool"]

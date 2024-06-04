@@ -10,8 +10,38 @@ declare float @"llvm.pow.f32"(float %".1", float %".2")
 
 declare void @"printf"(i8* %".1", ...)
 
-@"float_string_format" = global [6 x i8] c"%.10f\0a"
+@"float_string_format" = global [5 x i8] c"%.10f"
 @"int_string_format" = global [3 x i8] c"%d\0a"
+define i32 @"main"()
+{
+"Main function":
+  %".2" = alloca float
+  store float 0x400921fb60000000, float* %".2"
+  %".4" = load float, float* %".2"
+  %".5" = fpext float %".4" to double
+  %".6" = bitcast [5 x i8]* @"float_string_format" to i8*
+  call void (i8*, ...) @"printf"(i8* %".6", double %".5")
+  %".8" = call i32 @"fibonacci"(i32 20)
+  %".9" = bitcast [3 x i8]* @"int_string_format" to i8*
+  call void (i8*, ...) @"printf"(i8* %".9", i32 %".8")
+  br label %"cond"
+cond:
+  %".12" = load float, float* %".2"
+  %".13" = fcmp olt float %".12", 0x4018000000000000
+  br i1 %".13", label %"body", label %"after"
+body:
+  %".15" = load float, float* %".2"
+  %".16" = fadd float %".15", 0x3ff0000000000000
+  store float %".16", float* %".2"
+  br label %"cond"
+after:
+  %".19" = load float, float* %".2"
+  %".20" = fpext float %".19" to double
+  %".21" = bitcast [5 x i8]* @"float_string_format" to i8*
+  call void (i8*, ...) @"printf"(i8* %".21", double %".20")
+  ret i32 0
+}
+
 define i32 @"fibonacci"(i32 %".1")
 {
 fibonacci_entry:
@@ -37,19 +67,4 @@ fibonacci_entry.endif.endif:
   %".18" = call i32 @"fibonacci"(i32 %".17")
   %".19" = add i32 %".15", %".18"
   ret i32 %".19"
-}
-
-define i32 @"main"()
-{
-main_entry:
-  %".2" = alloca float
-  store float 0x400921fb60000000, float* %".2"
-  %".4" = load float, float* %".2"
-  %".5" = fpext float %".4" to double
-  %".6" = bitcast [6 x i8]* @"float_string_format" to i8*
-  call void (i8*, ...) @"printf"(i8* %".6", double %".5")
-  %".8" = bitcast [3 x i8]* @"int_string_format" to i8*
-  call void (i8*, ...) @"printf"(i8* %".8", i32 1)
-  %".10" = call i32 @"fibonacci"(i32 20)
-  ret i32 %".10"
 }

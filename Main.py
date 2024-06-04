@@ -83,4 +83,4 @@ if __name__ == "__main__":
         result = cfunc()
         end = perf_counter()
 
-        print(f"Program returned: {result}, Runtime: {end - start} ms.")
+        print(f"Runtime: {end - start} ms.")

@@ -9,6 +9,17 @@ func fibonacci(n: int): int {
 }
 
 
-var a: float = 3.1415926535
-print(a)
+var j: int = 0
+var a: int = 0
 print(fibonacci(20))
+
+while j < 3 {
+    print(a)
+    var i: int = 0
+    while i <= 3 {
+        a = a + 1
+        i = i + 1
+    }
+    j = j + 1
+}
+print(a)
